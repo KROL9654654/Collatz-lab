@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Лаборатория Коллатца</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a quiet night laboratory, precise instruments on a graphite bench
+IDEA: glass instrument panels lit from above; each number is a specimen being measured
+PICTURE: the hero plot of 27's flight, then the live chart of the current experiment
+COLOUR and TYPE: graphite, ice-blue ink for measurements, one coral for peaks and discoveries; IBM Plex Sans + Mono
+LAYOUT: hero band, then stacked glass panels: experiment, records, auto-search, journal */
+:root{color-scheme:dark;--bg:#0e1116;--ink:#e8ecf1;--mute:#93a0b0;--blue:#8fc1e3;--hi:#f2a07b;--hiink:#2b120a;--bad:#ff9b8f;
+--glass:rgba(255,255,255,.035);--glass2:rgba(255,255,255,.06);--edge:rgba(255,255,255,.09);--edge2:rgba(255,255,255,.16);--grid:rgba(143,193,227,.06);--paper:#141922;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box;min-width:0}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip;min-height:100vh;
+background:radial-gradient(1200px 600px at 50% -200px,rgba(143,193,227,.13),transparent 70%),radial-gradient(800px 500px at 100% 100%,rgba(242,160,123,.06),transparent 70%),
+linear-gradient(var(--grid) 1px,transparent 1px) 0 0/32px 32px,linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/32px 32px,var(--bg);background-attachment:fixed}
+.wrap{max-width:960px;margin:0 auto;padding:clamp(16px,4vw,40px) max(4vw,14px) 56px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:center;margin-bottom:22px;padding:clamp(18px,3vw,28px);border-radius:22px;border:1px solid var(--edge);
+background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 24px 60px -30px rgba(0,0,0,.8)}
+.hero svg{width:100%;height:auto;display:block}
+.tag{display:inline-block;font:500 12px "IBM Plex Mono",monospace;color:var(--blue);border:1px solid rgba(143,193,227,.3);border-radius:999px;padding:3px 10px;margin-bottom:12px}
+h1{font-size:clamp(32px,5.4vw,50px);line-height:1.04;margin:0 0 10px;font-weight:600;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 14px;font-weight:600;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--blue);box-shadow:0 0 0 4px rgba(143,193,227,.12)}
+.rule{color:var(--mute);margin:0;max-width:52ch}
+.rule b{color:var(--ink);font-weight:600}
+.sheet{position:relative;border-radius:20px;padding:clamp(16px,2.6vw,24px);margin:0 0 18px;border:1px solid var(--edge);
+background:linear-gradient(180deg,var(--glass2),var(--glass));box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 20px 50px -28px rgba(0,0,0,.85);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input,select{font:16px "IBM Plex Mono",monospace;color:var(--ink);background:rgba(0,0,0,.28);border:1px solid var(--edge);border-radius:12px;height:48px;padding:0 14px;transition:border-color .15s}
+input:hover,select:hover{border-color:var(--edge2)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+select option{background:#1a2029}
+#num{flex:1 1 260px;font-size:17px}
+button{font:600 15px "IBM Plex Sans",sans-serif;height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--edge2);background:rgba(255,255,255,.05);color:var(--ink);cursor:pointer;transition:background .15s,transform .1s}
+button:hover{background:rgba(255,255,255,.09)}
+button.go{background:var(--blue);border-color:transparent;color:#0d1a24}
+button.go:hover{background:#a6d0ec}
+button:active{transform:scale(.97)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{height:34px;padding:0 13px;font:13px "IBM Plex Mono",monospace;border-radius:999px;background:rgba(143,193,227,.07);border-color:rgba(143,193,227,.22);color:#cfe3f2}
+.lbl{font-size:13px;color:var(--mute)}
+#err{color:var(--bad);font-size:14px;min-height:20px;margin-top:8px}
+.fig{position:relative;height:clamp(250px,44vw,380px);border-radius:14px;border:1px solid var(--edge);margin-top:12px;overflow:hidden;
+background:linear-gradient(var(--grid) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/24px 24px,rgba(0,0,0,.3);box-shadow:0 0 0 1px rgba(0,0,0,.3) inset}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+#status{font-size:14px;color:var(--mute);margin-top:12px;min-height:22px}
+.banner{display:none;margin-top:12px;padding:13px 16px;border-radius:12px;font-weight:600}
+.banner.hi{display:block;background:var(--hi);color:var(--hiink)}
+.banner.ok{display:block;background:rgba(143,193,227,.08);border:1px solid rgba(143,193,227,.22);color:#cfe3f2}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:14px}
+.stat{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .v{font:600 clamp(18px,3vw,23px) "IBM Plex Mono",monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.rec{display:grid;gap:8px;margin-top:12px}
+.rec div{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:15px}
+.mono{font-family:"IBM Plex Mono",monospace;overflow-wrap:anywhere;color:#cfe3f2}
+ul{list-style:none;padding:0;margin:0}
+li{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:10px;font-size:14px}
+li:nth-child(odd){background:rgba(255,255,255,.025)}
+#top li:hover{background:rgba(143,193,227,.08)}
+#top li:first-child span:last-child{color:var(--hi)}
+li span:first-child{font-family:"IBM Plex Mono",monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+li span:last-child{color:var(--mute);white-space:nowrap}
+.note{font-size:13px;color:var(--mute);margin-top:10px}
+@media(max-width:680px){.hero{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div>
+    <span class="tag">гипотеза 3n + 1</span>
+    <h1>Лаборатория Коллатца</h1>
+    <p class="rule">Правило: <b>чётное → делим на 2</b>, <b>нечётное → ×3 + 1</b>. Все проверенные числа пришли к 1. Найди то, которое не придёт.</p>
+  </div>
+  <svg id="heroSvg" viewBox="0 0 440 220" role="img" aria-label="Путь числа 27: 111 шагов, взлёт до 9232"></svg>
+</header>
+
+<div class="sheet">
+  <h2>Опыт</h2>
+  <div class="row">
+    <input id="num" value="27" inputmode="text" autocomplete="off" spellcheck="false" aria-label="Число или выражение">
+    <button class="go" id="run">Запустить</button>
+    <button id="stop">Стоп</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <span class="lbl">Лимит шагов</span>
+    <select id="limit"><option value="1000000">1 млн</option><option value="10000000">10 млн</option><option value="100000000" selected>100 млн</option><option value="1000000000">1 млрд</option></select>
+    <span class="lbl">Скорость</span>
+    <select id="speed"><option value="soft">Бережно</option><option value="mid" selected>Средне</option><option value="fast">Быстро</option></select>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <span class="lbl">Гигант из</span>
+    <input id="gd" type="number" min="2" max="2000000" value="10000" style="width:130px" aria-label="Цифр в случайном числе">
+    <span class="lbl">цифр</span>
+    <button id="rnd">Случайный гигант</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="err"></div>
+  <div class="fig"><canvas id="cv"></canvas></div>
+  <div id="status">Можно писать степень: 3579^9753, или 2^1000-1. Максимум 2 млн цифр.</div>
+  <p class="note">«Бережно» считает с перерывами: телефон меньше греется и не зависает. Скорость можно менять прямо во время счёта.</p>
+  <div class="banner" id="banner"></div>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Шагов</div><div class="v" id="sSteps">0</div></div>
+    <div class="stat"><div class="lbl">Из них ×3+1</div><div class="v" id="sOdd">0</div></div>
+    <div class="stat"><div class="lbl">Цифр в начале</div><div class="v" id="sStart">0</div></div>
+    <div class="stat"><div class="lbl">Пик, цифр</div><div class="v" id="sPeak">0</div></div>
+    <div class="stat"><div class="lbl">Время</div><div class="v" id="sTime">0 с</div></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <h2>Автопоиск рекордов</h2>
+  <div class="row">
+    <span class="lbl">С числа</span>
+    <input id="from" value="1" style="flex:1 1 180px" inputmode="numeric" aria-label="Начальное число">
+    <select id="count"><option value="10000">10 000 чисел</option><option value="100000" selected>100 000 чисел</option><option value="1000000">1 млн чисел</option><option value="inf">Бесконечно</option></select>
+    <button class="go" id="scan">Искать</button>
+    <button id="sstop">Стоп</button>
+    <button id="resume">Продолжить с места</button>
+  </div>
+  <div id="sstatus" class="note">Перебирает числа подряд и запоминает самые длинные пути и самые высокие взлёты.</div>
+  <div class="rec">
+    <div>Самый длинный путь: <span class="mono" id="rSteps">—</span></div>
+    <div>Самый высокий взлёт: <span class="mono" id="rPeak">—</span></div>
+  </div>
+  <div class="row" style="margin-top:10px"><button id="openRec">Открыть рекорд в опыте</button></div>
+  <div class="banner" id="sbanner"></div>
+  <p class="note">Все числа примерно до 10^20 уже проверены компьютерами. Шанс на открытие есть среди гигантов.</p>
+</div>
+
+<div class="sheet">
+  <h2>Рекорды по шагам</h2>
+  <p class="note" style="margin-top:0">Топ-10 чисел с самым длинным путём из всех опытов и поисков. Нажми на число, чтобы открыть его в опыте.</p>
+  <ul id="top"><li><span>Пока пусто</span><span></span></li></ul>
+  <div class="row" style="margin-top:10px"><button id="clearTop">Очистить рекорды</button></div>
+</div>
+
+<div class="sheet">
+  <h2>Журнал опытов</h2>
+  <ul id="hist"><li><span>Пока пусто</span><span></span></li></ul>
+</div>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const WORKER=`
+const SPEED={soft:[25,75],mid:[50,50],fast:[120,0]};
+let sp=SPEED.mid,top=[];
+function enters(s){if(top.length<10||s>top[top.length-1]){top.push(s);top.sort((a,b)=>b-a);if(top.length>10)top.pop();return true;}return false;}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const MAXD=2000000;
+function bitsOf(n){const h=n.toString(16);return (h.length-1)*4+Math.floor(Math.log2(parseInt(h[0],16)))+1;}
+function lg(n){if(n<9007199254740992n)return Math.log10(Number(n));return bitsOf(n)*0.30103;}
+function digitsOf(n){if(n<10n**15n)return n.toString().length;return Math.floor((bitsOf(n)-1)*0.30103)+1;}
+const SUP={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+function rnd(d){if(d<2||d>MAXD)throw new Error('Гигант: от 2 до 2 000 000 цифр.');
+  const hl=Math.max(1,Math.round(d/1.20412));const b=new Uint8Array(hl);crypto.getRandomValues(b);
+  let s='';for(let i=0;i<hl;i++)s+=(b[i]&15).toString(16);s=((b[0]>>4)%15+1).toString(16)+s.slice(1);return BigInt('0x'+s);}
+function evalExpr(src){
+  let s='',inSup=false;
+  for(const ch of src.replace(/\\s+/g,'')){if(SUP[ch]){if(!inSup){s+='^';inSup=true;}s+=SUP[ch];}else{inSup=false;s+=ch;}}
+  s=s.replace(/\\*\\*/g,'^');let i=0;
+  const fail=m=>{throw new Error(m)};
+  const int=()=>{let m=/^rnd\\((\\d+)\\)/.exec(s.slice(i));if(m){i+=m[0].length;return rnd(+m[1]);}
+    m=/^\\d+/.exec(s.slice(i));if(!m)fail('Ожидалось число на месте «'+(s[i]||'конец')+'»');
+    if(m[0].length>MAXD)fail('Больше 2 млн цифр.');i+=m[0].length;return BigInt(m[0]);};
+  const pow=()=>{const a=int();if(s[i]==='^'){i++;const b=pow();
+      const est=a<2n?1:(bitsOf(a)-1)*0.30103*Number(b);
+      if(est>MAXD)fail('Слишком большое: примерно '+(est>1e12?'больше триллиона':Math.round(est).toLocaleString('ru-RU'))+' цифр. Максимум 2 000 000.');
+      return a**b;}return a;};
+  const term=()=>{let v=pow();while(s[i]==='*'){i++;v*=pow();if(digitsOf(v)>MAXD)fail('Больше 2 млн цифр.');}return v;};
+  let v=term();
+  while(s[i]==='+'||s[i]==='-'){const op=s[i++];const t=term();v=op==='+'?v+t:v-t;}
+  if(i<s.length)fail('Непонятный символ «'+s[i]+'». Можно: цифры, ^, *, +, -, rnd(N)');
+  if(v<1n)fail('Нужно число от 1 и больше.');
+  return v;
+}
+onmessage=e=>{const d=e.data;if(d.speed)sp=SPEED[d.speed]||sp;if(d.topSteps)top=d.topSteps.slice();
+  if(d.type==='run')run(d.expr,d.limit);else if(d.type==='scan')scan(d.expr,d.count,d.limit);};
+async function run(expr,limit){
+  let n;try{n=evalExpr(expr);}catch(e){postMessage({type:'err',m:e.message});return;}
+  const t0=performance.now();let steps=0,odd=0,saved=n,power=1,lam=0,stride=1;
+  const startBits=bitsOf(n),start=lg(n);
+  postMessage({type:'start',digits:digitsOf(n),expect:Math.round(startBits*7.23)});
+  let samples=[[0,start]],peak=start;
+  const prog=()=>postMessage({type:'p',steps,odd,peak,samples,t:performance.now()-t0});
+  while(true){
+    const end=performance.now()+sp[0];
+    while(n!==1n){
+      if(n&1n){n=3n*n+1n;odd++;}else n>>=1n;
+      steps++;
+      if(n===saved&&n>4n){prog();postMessage({type:'cycle',steps,len:lam+1});return;}
+      if(++lam===power){saved=n;power*=2;lam=0;}
+      if(steps%stride===0){const v=lg(n);samples.push([steps,v]);if(v>peak)peak=v;
+        if(samples.length>2000){samples=samples.filter((_,i)=>i%2===0);stride*=2;}}
+      if(steps>=limit){prog();postMessage({type:'limit',steps});return;}
+      if((steps&63)===0&&performance.now()>end)break;
+    }
+    if(n===1n)break;
+    prog();await sleep(sp[1]||0);
+  }
+  samples.push([steps,0]);prog();postMessage({type:'done',steps});
+}
+async function scan(expr,count,limit){
+  let from;try{from=evalExpr(expr);}catch(e){postMessage({type:'serr',m:e.message});return;}
+  if(digitsOf(from)>5000){postMessage({type:'serr',m:'Для перебора возьми число до 5000 цифр.'});return;}
+  const t0=performance.now();let bs=-1,bp=-1n,end=performance.now()+sp[0];
+  for(let i=0;i<count;i++){let n=from+BigInt(i);const s0=n;
+    let steps=0,m=n,saved=n,power=1,lam=0,bad=null;
+    while(n!==1n){if(n&1n)n=3n*n+1n;else n>>=1n;steps++;if(n>m)m=n;
+      if(n===saved&&n>4n){bad='cycle';break;}if(++lam===power){saved=n;power*=2;lam=0;}
+      if(steps>=limit){bad='limit';break;}}
+    const label=()=>{const t=s0.toString();return t.length>40?t.slice(0,18)+'…'+t.slice(-12):t;};
+    if(bad)postMessage({type:'found',kind:bad,n:label(),full:s0.toString()});
+    if(!bad&&enters(steps)){const f=s0.toString();postMessage({type:'top',n:label(),full:f.length<=300?f:null,steps});}
+    if(steps>bs){bs=steps;postMessage({type:'rs',n:label(),full:s0.toString(),steps});}
+    if(m>bp){bp=m;postMessage({type:'rp',n:label(),d:digitsOf(m)});}
+    if(performance.now()>end){postMessage({type:'sp',i:i+1,next:(from+BigInt(i+1)).toString(),t:performance.now()-t0});await sleep(sp[1]||0);end=performance.now()+sp[0];}
+  }
+  postMessage({type:'sdone',i:count,t:performance.now()-t0});
+}`;
+const url=URL.createObjectURL(new Blob([WORKER],{type:'text/javascript'}));
+const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const secs=ms=>{const s=ms/1000;if(s<60)return s.toFixed(s<10?1:0)+' с';const m=Math.floor(s/60);if(m<60)return m+' мин '+Math.floor(s%60)+' с';return Math.floor(m/60)+' ч '+(m%60)+' мин';};
+
+{const sv=$('heroSvg');let n=27,pts=[27];while(n!==1){n=n%2?3*n+1:n/2;pts.push(n);}
+ const W=440,H=220,L=36,B=30,T=20,mx=Math.max(...pts),X=i=>L+i/(pts.length-1)*(W-L-12),Y=v=>H-B-Math.log10(v)/Math.log10(mx)*(H-T-B);
+ const d=pts.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');const pi=pts.indexOf(mx);
+ sv.innerHTML='<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fc1e3" stop-opacity=".35"/><stop offset="1" stop-color="#8fc1e3" stop-opacity="0"/></linearGradient></defs>'
+ +[0,1,2,3].map(k=>'<line x1="'+L+'" x2="'+(W-12)+'" y1="'+Y(10**k)+'" y2="'+Y(10**k)+'" stroke="rgba(255,255,255,.07)"/><text x="'+(L-6)+'" y="'+(Y(10**k)+4)+'" fill="#93a0b0" font-size="11" text-anchor="end" font-family="IBM Plex Mono">'+(10**k)+'</text>').join('')
+ +'<path d="'+d+' L'+X(pts.length-1)+' '+(H-B)+' L'+L+' '+(H-B)+'Z" fill="url(#hg)"/><path d="'+d+'" fill="none" stroke="#8fc1e3" stroke-width="1.6" stroke-linejoin="round"/>'
+ +'<circle cx="'+X(pi)+'" cy="'+Y(mx)+'" r="5" fill="#f2a07b"/><text x="'+(X(pi)-8)+'" y="'+(Y(mx)-2)+'" fill="#f2a07b" font-size="12" text-anchor="end" font-family="IBM Plex Mono">9232</text>'
+ +'<text x="'+L+'" y="'+(H-8)+'" fill="#93a0b0" font-size="11" font-family="IBM Plex Mono">старт 27</text><text x="'+(W-12)+'" y="'+(H-8)+'" fill="#93a0b0" font-size="11" text-anchor="end" font-family="IBM Plex Mono">111 шагов → 1</text>';}
+const cv=$('cv'),ctx=cv.getContext('2d');let samples=[];
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#2a5bd7';}
+function draw(){
+  const d=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,W,H);
+  const ink=css('--mute'),blue=css('--blue');ctx.font='12px "IBM Plex Mono",monospace';
+  if(samples.length<2){ctx.fillStyle=ink;ctx.textAlign='center';ctx.fillText('Запусти опыт — тут появится путь числа',W/2,H/2);return;}
+  const L=44,R=14,T=18,B=28,maxX=samples[samples.length-1][0]||1;let maxY=0;for(const p of samples)if(p[1]>maxY)maxY=p[1];maxY=maxY*1.08||1;
+  const X=x=>L+(x/maxX)*(W-L-R),Y=y=>H-B-(y/maxY)*(H-T-B);
+  ctx.strokeStyle=ink;ctx.globalAlpha=.5;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,H-B);ctx.lineTo(W-R,H-B);ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=ink;ctx.textAlign='right';ctx.fillText(fmt(Math.floor(maxY/1.08)+1),L-6,Y(maxY/1.08)+4);ctx.fillText('1',L-6,H-B+4);
+  ctx.textAlign='left';ctx.fillText('цифр',4,T-4);ctx.textAlign='right';ctx.fillText(fmt(maxX)+' шагов',W-R,H-8);
+  ctx.strokeStyle=blue;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.beginPath();
+  samples.forEach((p,i)=>{const x=X(p[0]),y=Y(p[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.lineTo(X(samples[samples.length-1][0]),H-B);ctx.lineTo(X(samples[0][0]),H-B);ctx.closePath();const g=ctx.createLinearGradient(0,T,0,H-B);g.addColorStop(0,'rgba(143,193,227,.28)');g.addColorStop(1,'rgba(143,193,227,0)');ctx.fillStyle=g;ctx.fill();
+  let pk=samples[0];for(const p of samples)if(p[1]>pk[1])pk=p;
+  const px=X(pk[0]),py=Y(pk[1]);ctx.fillStyle=css('--hi');ctx.beginPath();ctx.arc(px,py,5,0,7);ctx.fill();ctx.strokeStyle=blue;ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle=css('--ink');ctx.textAlign=px>W*0.7?'right':'left';ctx.fillText('пик',px+(px>W*0.7?-9:9),Math.max(py+4,T+10));
+}
+const ro=new ResizeObserver(draw);ro.observe(cv);
+
+function setBanner(el,cls,text){el.className='banner'+(cls?' '+cls:'');el.textContent=text;}
+let hist=[];try{hist=JSON.parse(localStorage.getItem('collatz_hist')||'[]');}catch(e){}
+function showHist(){$('hist').innerHTML=hist.length?hist.map(()=>'<li><span></span><span></span></li>').join(''):'<li><span>Пока пусто</span><span></span></li>';
+  if(hist.length)[...$('hist').children].forEach((li,i)=>{li.children[0].textContent=hist[i].n;li.children[1].textContent=hist[i].r;});}
+function addHist(n,r){hist.unshift({n:n.length>40?n.slice(0,26)+'…':n,r});hist=hist.slice(0,10);try{localStorage.setItem('collatz_hist',JSON.stringify(hist));}catch(e){}showHist();}
+showHist();
+
+let worker=null,sw=null,expr='',expect=0;
+let topList=[];try{topList=JSON.parse(localStorage.getItem('collatz_top')||'[]');}catch(e){}
+function showTop(){const ul=$('top');
+  if(!topList.length){ul.innerHTML='<li><span>Пока пусто</span><span></span></li>';return;}
+  ul.innerHTML=topList.map(()=>'<li style="cursor:pointer"><span></span><span></span></li>').join('');
+  [...ul.children].forEach((li,i)=>{const t=topList[i];li.children[0].textContent=(i+1)+'. '+t.n;li.children[1].textContent=fmt(t.steps)+' шагов';
+    li.onclick=()=>{if(t.full){$('num').value=t.full;run();window.scrollTo({top:0,behavior:'smooth'});}};});}
+function addTop(e){const k=e.full||e.n;if(topList.some(t=>(t.full||t.n)===k))return;topList.push(e);topList.sort((a,b)=>b.steps-a.steps);topList=topList.slice(0,10);
+  try{localStorage.setItem('collatz_top',JSON.stringify(topList));}catch(x){}showTop();}
+const topSteps=()=>topList.map(t=>t.steps);
+showTop();
+$('clearTop').onclick=()=>{topList=[];try{localStorage.removeItem('collatz_top');}catch(e){}showTop();if(sw)sw.postMessage({topSteps:[0]});};
+const speed=()=>$('speed').value;
+$('speed').onchange=()=>{if(worker)worker.postMessage({speed:speed()});if(sw)sw.postMessage({speed:speed()});};
+function run(){
+  $('err').textContent='';expr=$('num').value.trim();if(!expr){$('err').textContent='Введи число.';return;}
+  if(worker)worker.terminate();
+  samples=[];draw();setBanner($('banner'),'','');
+  ['sSteps','sOdd','sStart','sPeak'].forEach(id=>$(id).textContent='—');$('sTime').textContent='0 с';
+  $('status').textContent='Готовлю число…';
+  worker=new Worker(url);
+  worker.onmessage=e=>{const d=e.data;
+    if(d.type==='err'){$('err').textContent=d.m;$('status').textContent='';worker.terminate();worker=null;}
+    else if(d.type==='start'){expect=d.expect;$('sStart').textContent=fmt(d.digits);$('status').textContent='Считаю…';}
+    else if(d.type==='p'){samples=d.samples;$('sSteps').textContent=fmt(d.steps);$('sOdd').textContent=fmt(d.odd);$('sPeak').textContent=(d.peak>15?'≈ ':'')+fmt(Math.floor(d.peak)+1);$('sTime').textContent=secs(d.t);draw();
+      const pct=expect>2000?Math.min(99,Math.floor(d.steps/expect*100)):null;
+      $('status').textContent='Считаю… шаг '+fmt(d.steps)+(pct!==null?' · пройдено примерно '+pct+'% пути':'');}
+    else if(d.type==='done'){$('status').textContent='Пришло к 1 за '+fmt(d.steps)+' шагов. Гипотеза пока держится.';setBanner($('banner'),'ok','Обычное число: дошло до 1.');addHist(expr,fmt(d.steps)+' шагов → 1');addTop({n:expr.length>40?expr.slice(0,26)+'…':expr,full:/rnd/.test(expr)||expr.length>300?null:expr,steps:d.steps});worker=null;}
+    else if(d.type==='limit'){$('status').textContent='Достигнут лимит '+fmt(d.steps)+' шагов, а до 1 не дошло.';setBanner($('banner'),'hi','Кандидат! Не упало до 1 за '+fmt(d.steps)+' шагов. Поставь лимит побольше: скорее всего, оно просто очень долгое.');addHist(expr,'кандидат, '+fmt(d.steps)+'+');worker=null;}
+    else if(d.type==='cycle'){$('status').textContent='Число повторилось!';setBanner($('banner'),'hi','ОТКРЫТИЕ: найден новый цикл длиной '+fmt(d.len)+' на шаге '+fmt(d.steps)+'. Сохрани, что ввёл: '+expr.slice(0,80));addHist(expr,'НОВЫЙ ЦИКЛ');worker=null;}
+  };
+  worker.postMessage({type:'run',expr,limit:+$('limit').value,speed:speed()});
+}
+function stop(){if(worker){worker.terminate();worker=null;$('status').textContent='Остановлено.';}}
+$('run').onclick=run;$('stop').onclick=stop;
+$('num').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+$('rnd').onclick=()=>{const k=Math.max(2,Math.min(2000000,Math.round(+$('gd').value)||10000));$('num').value='rnd('+k+')';run();};
+const EX=['27','871','63728127','2^1000-1','3579^9753','7^200000','rnd(500000)'];
+$('chips').innerHTML=EX.map(()=>'<button class="chip"></button>').join('');
+[...$('chips').children].forEach((b,i)=>{b.textContent=EX[i];b.onclick=()=>{$('num').value=EX[i];run();};});
+
+let recN=null;
+$('scan').onclick=()=>{
+  if(sw)sw.terminate();sw=new Worker(url);recN=null;$('rSteps').textContent='—';$('rPeak').textContent='—';setBanner($('sbanner'),'','');
+  const cnt=$('count').value==='inf'?Infinity:+$('count').value;$('sstatus').textContent='Начинаю…';
+  sw.onmessage=e=>{const d=e.data;
+    if(d.type==='serr'){$('sstatus').textContent=d.m;sw.terminate();sw=null;}
+    else if(d.type==='top'){addTop({n:d.n,full:d.full,steps:d.steps});}
+    else if(d.type==='rs'){recN=d.full;$('rSteps').textContent=d.n+' — '+fmt(d.steps)+' шагов';}
+    else if(d.type==='rp'){$('rPeak').textContent=d.n+' — взлёт до '+fmt(d.d)+' цифр';}
+    else if(d.type==='sp'){$('sstatus').textContent='Проверено '+fmt(d.i)+' из '+(cnt===Infinity?'∞':fmt(cnt))+' · сейчас '+(d.next.length>30?d.next.slice(0,14)+'…':d.next)+' · '+secs(d.t);try{localStorage.setItem('collatz_pos',d.next);}catch(e){}}
+    else if(d.type==='found'){setBanner($('sbanner'),'hi',(d.kind==='cycle'?'ОТКРЫТИЕ: новый цикл у числа ':'Кандидат: не дошло до 1 за лимит — число ')+d.n);}
+    else if(d.type==='sdone'){$('sstatus').textContent='Готово: '+fmt(d.i)+' чисел за '+secs(d.t)+'. Все дошли до 1, если выше нет жёлтой плашки.';sw=null;}
+  };
+  sw.postMessage({type:'scan',expr:$('from').value.trim()||'1',count:cnt,limit:+$('limit').value,speed:speed(),topSteps:topSteps()});
+};
+$('resume').onclick=()=>{let p=null;try{p=localStorage.getItem('collatz_pos');}catch(e){}if(p){$('from').value=p;$('scan').click();}else $('sstatus').textContent='Сохранённого места пока нет.';};
+$('sstop').onclick=()=>{if(sw){sw.terminate();sw=null;$('sstatus').textContent='Поиск остановлен.';}};
+$('openRec').onclick=()=>{if(recN){$('num').value=recN;run();window.scrollTo({top:0,behavior:'smooth'});}};
+run();
+}
+</script>
+</body>
+</html>
